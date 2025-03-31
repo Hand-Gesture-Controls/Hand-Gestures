@@ -1,0 +1,18 @@
+# Core Requirements
+mediapipe>=0.10.0,<1.0.0
+opencv-python>=4.7.0,<5.0.0
+numpy>=1.24.0,<2.0.0
+
+# Audio Control
+pycaw>=20230426
+
+# Brightness Control
+screen-brightness-control>=0.8.0,<1.0.0
+
+# System Utilities
+psutil>=5.9.0,<6.0.0
+comtypes>=1.2.0,<2.0.0
+
+# Platform-specific dependencies
+pywin32>=305; sys_platform == 'win32'
+python3-xlib>=0.15; sys_platform == 'linux'

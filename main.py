@@ -11,10 +11,11 @@ from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 import screen_brightness_control as sbc
-
+from nlp_classifier import NLPClassifier
 
 class GestureControlSystem:
     def __init__(self):
+        self.nlp_model = NLPClassifier()
         self.mpHands = mp.solutions.hands
         self.hands = self.mpHands.Hands(
             static_image_mode=False,
@@ -167,42 +168,39 @@ class GestureControlSystem:
                     command = recognizer.recognize_google(audio).lower()
                     print("Heard:", command)
 
-                    if "increase brightness" in command:
+                    intent = self.nlp_model.predict_intent(command)
+                    if intent == "increase_brightness":
                         sbc.set_brightness(min(sbc.get_brightness()[0] + 20, 100))
-                    elif "decrease brightness" in command:
+                    elif intent == "decrease_brightness":
                         sbc.set_brightness(max(sbc.get_brightness()[0] - 20, 0))
-                    elif "increase volume" in command:
-                        self.volume.SetMasterVolumeLevel(
-                            min(self.volume.GetMasterVolumeLevel() + 5.0, 0.0), None)
-                    elif "decrease volume" in command:
-                        self.volume.SetMasterVolumeLevel(
-                            max(self.volume.GetMasterVolumeLevel() - 5.0, -65.25), None)
-                    elif "click photo" in command:
+                    elif intent == "increase_volume":
+                        self.volume.SetMasterVolumeLevel(min(self.volume.GetMasterVolumeLevel() + 5.0, 0.0), None)
+                    elif intent == "decrease_volume":
+                        self.volume.SetMasterVolumeLevel(max(self.volume.GetMasterVolumeLevel() - 5.0, -65.25), None)
+                    elif intent == "click_photo":
                         self.countdown_start_time = time.time()
                         self.photo_countdown = 1
-                    elif "open file manager" in command:
+                    elif intent == "open_file_manager":
                         os.system("explorer" if os.name == "nt" else "xdg-open .")
                         self.file_manager_opened = True
-                    elif "close file manager" in command:
+                    elif intent == "close_file_manager":
                         self.close_file_manager()
                         self.file_manager_opened = False
-                    elif "open calculator" in command:
+                    elif intent == "open_calculator":
                         subprocess.Popen("calc" if os.name == "nt" else "gnome-calculator", shell=True)
-                    elif "open chrome" in command:
+                    elif intent == "open_chrome":
                         subprocess.Popen("start chrome" if os.name == "nt" else "google-chrome", shell=True)
-                    elif "open vs code" in command or "open vscode" in command:
+                    elif intent == "open_vscode":
                         subprocess.Popen("code", shell=True)
-
-                    elif "set brightness to" in command:
+                    elif intent == "set_brightness":
                         try:
-                            level = int(command.split("set brightness to")[-1].strip().split()[0])
+                            level = int([int(s) for s in command.split() if s.isdigit()][0])
                             sbc.set_brightness(max(0, min(level, 100)))
                         except:
                             print("Couldn't parse brightness value.")
-
-                    elif "set volume to" in command:
+                    elif intent == "set_volume":
                         try:
-                            level = int(command.split("set volume to")[-1].strip().split()[0])
+                            level = int([int(s) for s in command.split() if s.isdigit()][0])
                             vol_level = np.interp(level, [0, 100], [-65.25, 0])
                             self.volume.SetMasterVolumeLevel(vol_level, None)
                         except:
